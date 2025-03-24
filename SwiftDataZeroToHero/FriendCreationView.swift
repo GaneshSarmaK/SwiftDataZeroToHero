@@ -23,9 +23,10 @@ struct FriendCreationView: View {
         
         VStack {
             
+            Spacer()
+            
             Text("Friend Name:")
                 .font(.title)
-                .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
             TextField("Enter name", text: $friendName)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -35,12 +36,13 @@ struct FriendCreationView: View {
             
             Text("Friend URL:")
                 .font(.title)
-                .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
             TextField("Enter url", text: $friendURL)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .frame(maxWidth: 300)
                 .padding()
+            
+            Spacer()
             
             Button(action: {
                 if let friend {

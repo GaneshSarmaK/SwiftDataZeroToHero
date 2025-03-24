@@ -72,7 +72,7 @@ struct PostCreationView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             Picker("Select", selection: $postKindSelectedSegment) {
                 ForEach(PostKind.allCases, id: \.self) { segment in
-                    Text("\(segment)")
+                    Text("\(segment)".capitalized)
                 }
             }
             .pickerStyle(.segmented)
