@@ -8,24 +8,13 @@
 import SwiftUI
 import SwiftData
 
-
-
 struct MainView: View {
-    
-    
-    
     @State private var path: [NavViews] = []
-    
     @State private var selectedFriends: Set<String> = []
-    
     @State private var areFriendsVisible: Bool = false
-    
     @State private var selectedKind: PostKind? = nil
-    
     @State private var showKindOptions = false
-    
     @State var friendViewModel: FriendViewModel = FriendViewModel()
-    
     @State var postViewModel: PostViewModel = PostViewModel()
     
     
@@ -35,28 +24,35 @@ struct MainView: View {
                 
                 if areFriendsVisible {
                     HorizontalFriendsView(selectedFriends: $selectedFriends, friends: friendViewModel.friends)
+                        .transition(.move(edge: .top))
+                        .animation(.easeInOut, value: areFriendsVisible)
                 }
                 
                 HStack{
-                    
                     Menu {
                         Button {
                             selectedKind = nil
-                            postViewModel.fetchPosts(friendIDs: Array(selectedFriends))
+                            Task {
+                                await postViewModel.fetchPosts(friendIDs: Array(selectedFriends))
+                            }
                         } label: {
                             Label("All", systemImage: selectedKind == nil ? "checkmark.square" : "square")
                         }
                         
                         Button {
                             selectedKind = .created
-                            postViewModel.fetchPosts(friendIDs: Array(selectedFriends), kind: .created)
+                            Task {
+                                await postViewModel.fetchPosts(friendIDs: Array(selectedFriends), kind: .created)
+                            }
                         } label: {
                             Label("Created", systemImage: selectedKind == .created ? "checkmark.square" : "square")
                         }
                         
                         Button {
                             selectedKind = .received
-                            postViewModel.fetchPosts(friendIDs: Array(selectedFriends), kind: .received)
+                            Task {
+                                await postViewModel.fetchPosts(friendIDs: Array(selectedFriends), kind: .received)
+                            }
                         } label: {
                             Label("Received", systemImage: selectedKind == .received ? "checkmark.square" : "square")
                         }
@@ -68,47 +64,9 @@ struct MainView: View {
                             .foregroundColor(.white)
                             .clipShape(Capsule())
                     }
-                    //                    Button {
-                    //                        showKindOptions = true
-                    //                    } label: {
-                    //                        Text("Post Kind")
-                    //                            .padding()
-                    //                            .background(Color.blue)
-                    //                            .foregroundColor(.white)
-                    //                            .clipShape(Capsule())
-                    //                    }
-                    //                    .confirmationDialog("Filter by Post Kind", isPresented: $showKindOptions, titleVisibility: .visible) {
-                    //                        Button("All") {
-                    //                            postViewModel.fetchPosts(friendIDs: Array(selectedFriends))
-                    //                        }
-                    //                        Button("Created") {
-                    //                            postViewModel.fetchPosts(friendIDs: Array(selectedFriends), kind: .created)
-                    //                        }
-                    //                        Button("Received") {
-                    //                            postViewModel.fetchPosts(friendIDs: Array(selectedFriends), kind: .received)
-                    //                        }
-                    ////                        Button("Cancel", role: .cancel) {}
-                    //                    }
                     
-                    //                    .contextMenu {
-                    //                        Button() {
-                    //
-                    //                            postViewModel.fetchPosts( friendIDs: Array(selectedFriends) )
-                    //                        } label: {
-                    //                            Text("All")
-                    //                        }
-                    //                        Button() {
-                    //                            postViewModel.fetchPosts( friendIDs: Array(selectedFriends), kind: .created)
-                    //                        } label: {
-                    //                            Text("Created")
-                    //                        }
-                    //                        Button() {
-                    //                            postViewModel.fetchPosts( friendIDs: Array(selectedFriends), kind: .received)
-                    //                        } label: {
-                    //                            Text("Received")
-                    //                        }
-                    //                    }
                     Spacer()
+                    
                     Button {
                         areFriendsVisible.toggle()
                     } label: {
@@ -120,16 +78,21 @@ struct MainView: View {
                     }
                     
                     Spacer()
+                    
                     Button {
                         areFriendsVisible = false
                         selectedFriends = []
-                        postViewModel.fetchPosts( friendIDs: Array(selectedFriends))
+                        selectedKind = nil
+                        Task {
+                            await postViewModel.fetchPosts( friendIDs: Array(selectedFriends))
+                        }
                     } label: {
                         Text("Clear all")
                             .padding()
                             .foregroundColor(.red)
                     }
                 }
+                
                 Spacer(minLength: 15)
                 
                 Text("Friends: ")
@@ -150,7 +113,6 @@ struct MainView: View {
                 
                 Button(action: {
                     path.append(.postCreationView(nil))
-                    
                 }, label: {
                     Text("Add new post")
                         .padding()
@@ -158,9 +120,23 @@ struct MainView: View {
                         .foregroundColor(.white)
                         .clipShape(Capsule())
                 })
+                
+                Button {
+                    let array = Array(repeating: 100, count: 1000)
+                    for i in array {
+                        let randomInt = Int.random(in: 100...1000)
+                        print("Adding \(i) with text \(randomInt)")
+                        //Testing
+//                        Task {
+//                            await friendViewModel.addFriend(name: "\(randomInt)", url: "\(randomInt) \(randomInt)")
+//                            await postViewModel.addPost(title: "\(randomInt)", colour: .random, friends: [UUID().uuidString], postKind: .created)
+//                        }
+                    }
+                } label: {
+                    Text("Bulk Add")
+                }
             }
             .padding()
-            
             .navigationDestination(for: NavViews.self) { destination in
                 switch(destination) {
                 case .friendCreationView(let friend):
@@ -170,13 +146,19 @@ struct MainView: View {
                 }
             }
             .onChange(of: selectedFriends) {
-                postViewModel.fetchPosts(friendIDs: Array(selectedFriends), kind: selectedKind)
+                Task {
+                    await postViewModel.fetchPosts(friendIDs: Array(selectedFriends), kind: selectedKind)
+                }
             }
             .onAppear {
-                postViewModel.fetchPosts()
-                friendViewModel.fetchFriends()
+                Task {
+                    await postViewModel.fetchPosts()
+                    await friendViewModel.fetchFriends()
+                }
             }
         }
+        .environment(postViewModel)
+        .environment(friendViewModel)
     }
 }
 
@@ -189,7 +171,9 @@ extension MainView{
                         .padding()
                         .contextMenu {
                             Button(role: .destructive) {
-                                deleteFriend(friend)
+                                Task {
+                                    await friendViewModel.deleteFriend(friend)
+                                }
                             } label: {
                                 Label("Delete", systemImage: "trash")
                             }
@@ -216,7 +200,9 @@ extension MainView{
                         .padding()
                         .contextMenu {
                             Button(role: .destructive) {
-                                deletePost(post)
+                                Task {
+                                    await postViewModel.deletePost(post)
+                                }
                             } label: {
                                 Label("Delete", systemImage: "trash")
                             }
@@ -241,18 +227,7 @@ extension MainView{
 }
 
 extension MainView{
-    
-    func deleteFriend(_ friend: Friend){
-        withAnimation {
-            friendViewModel.deleteFriend(friend)
-        }
-    }
-    func deletePost(_ post: Post){
-        withAnimation {
-            postViewModel.deletePost(post)
-        }
-    }
-    
+        
     func updateFriend(_ friend: Friend){
         path.append(.friendCreationView(friend))
     }
@@ -260,24 +235,6 @@ extension MainView{
     func updatePost(_ post: Post){
         path.append(.postCreationView(post))
     }
-    
-    private func addTestData(){
-        var arr: [String] = []
-        for i in 0...10{
-            let frnd = Friend(name: "Name \(i)", url: "URL \(i)")
-            arr.append(frnd.id)
-            friendViewModel.addFriend(frnd)
-        }
-        for i in 0...10{
-            let post = Post(title: "Title \(i)", colour: .random, friends: arr, postKind: .created)
-            postViewModel.addPost(post)
-        }
-        for i in 10...20{
-            let frnd = Friend(name: "Name \(i)", url: "URL \(i)")
-            friendViewModel.addFriend(frnd)        }
-        
-    }
-    
 }
 
 #Preview {

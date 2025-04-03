@@ -11,18 +11,18 @@ import SwiftData
 struct HorizontalFriendsView: View {
     
     @Binding var selectedFriends: Set<String>
-    
-    @State var postViewModel: PostViewModel = PostViewModel()
-    
+        
     let friends: [Friend]
     
     var body: some View {
         
         ScrollView(.horizontal, showsIndicators: false) {
+            
             HStack {
                 ForEach(friends) { friend in
                     VStack {
                         let isSelected = selectedFriends.contains(friend.id)
+                        
                         ZStack {
                             Circle()
                                 .fill(Color.gray.opacity(0.2)) // or use a random/user color
@@ -35,6 +35,7 @@ struct HorizontalFriendsView: View {
                                     .foregroundColor(.green)
                             }
                         }
+                        
                         Text("\(friend.name)")
                             .foregroundStyle(isSelected ? .green : .primary)
                     }

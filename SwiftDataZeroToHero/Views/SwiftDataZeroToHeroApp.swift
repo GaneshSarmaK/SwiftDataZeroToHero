@@ -10,16 +10,12 @@ import SwiftData
 
 @main
 struct SwiftDataZeroToHeroApp: App {
-    
-
     var body: some Scene {
         WindowGroup {
             MainView()
         }
         .modelContainer(.sharedModelContainer)
     }
-    
-    
 }
 
 extension ModelContainer {
