@@ -13,15 +13,11 @@ struct PostCreationView: View {
     @Binding var path: [NavViews]
     
     @State private var postTitle: String = ""
-    
     @State private var postKindSelectedSegment: PostKind = .created
-    
     @State private var selectedFriends: Set<String> = []
     
-    
-    @State var friendViewModel: FriendViewModel = FriendViewModel()
-    
-    @State var postViewModel: PostViewModel = PostViewModel()
+    @Environment(FriendViewModel.self) var friendViewModel
+    @Environment(PostViewModel.self) var postViewModel
     
     var post: Post?
     
@@ -41,6 +37,7 @@ struct PostCreationView: View {
                         .frame(width: 50, height: 50)
                         .background(.red)
                         .cornerRadius(25)
+                    
                     Text("New")
                 }
                 .padding(.leading, 10)
@@ -50,7 +47,6 @@ struct PostCreationView: View {
                 
                 HorizontalFriendsView(selectedFriends: $selectedFriends, friends: friendViewModel.friends)
                     .padding()
-                
             }
             
             Spacer()
@@ -59,6 +55,7 @@ struct PostCreationView: View {
                 .font(.title)
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
+            
             TextField("Enter post title", text: $postTitle)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .frame(maxWidth: 300)
@@ -70,6 +67,7 @@ struct PostCreationView: View {
                 .font(.title)
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
+            
             Picker("Select", selection: $postKindSelectedSegment) {
                 ForEach(PostKind.allCases, id: \.self) { segment in
                     Text("\(segment)".capitalized)
@@ -82,9 +80,14 @@ struct PostCreationView: View {
             
             Button(action: {
                 if let post = post {
-                    updatePost(post)
+                    Task {
+                        await postViewModel.updatePost(title: postTitle, friends: Array(selectedFriends), postKind: postKindSelectedSegment, post: post)
+                    }
                 } else {
-                    createPost()}
+                    Task {
+                        await postViewModel.addPost(title: postTitle, colour: .random, friends: Array(selectedFriends), postKind: postKindSelectedSegment)
+                    }
+                }
                 path.removeLast()
             }, label: {
                 Text(post == nil ? "Add new post" : "Update Post")
@@ -97,7 +100,9 @@ struct PostCreationView: View {
             
         }
         .onAppear{
-            friendViewModel.fetchFriends()
+            Task {
+                await friendViewModel.fetchFriends()
+            }
             if let post = post {
                 selectedFriends = Set(post.friends)
                 postTitle = post.title
@@ -105,28 +110,6 @@ struct PostCreationView: View {
             }
         }
     }
-}
-
-extension PostCreationView{
-    
-    private func createPost() {
-        let newPost = Post(
-            title: postTitle,
-            colour: .random,
-            friends: Array(selectedFriends),
-            postKind: postKindSelectedSegment
-        )
-        print(newPost.friends)
-        postViewModel.addPost(newPost)
-    }
-    
-    private func updatePost(_ post: Post) {
-        post.title = postTitle
-        post.postKind = postKindSelectedSegment.rawValue
-        post.friends = Array(selectedFriends)
-        postViewModel.save()
-    }
-
 }
 
 #Preview {

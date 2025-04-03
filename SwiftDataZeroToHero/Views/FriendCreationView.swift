@@ -9,12 +9,11 @@ import SwiftUI
 
 struct FriendCreationView: View {
     
-    @Environment(\.modelContext) private var modelContext
+    @Environment(FriendViewModel.self) var friendViewModel
     
     @Binding var path: [NavViews]
     
     @State private var friendName: String = ""
-    
     @State private var friendURL: String = ""
     
     var friend: Friend?
@@ -28,15 +27,16 @@ struct FriendCreationView: View {
             Text("Friend Name:")
                 .font(.title)
                 .frame(maxWidth: .infinity, alignment: .leading)
+            
             TextField("Enter name", text: $friendName)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .frame(maxWidth: 300)
                 .padding()
             
-            
             Text("Friend URL:")
                 .font(.title)
                 .frame(maxWidth: .infinity, alignment: .leading)
+            
             TextField("Enter url", text: $friendURL)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .frame(maxWidth: 300)
@@ -46,9 +46,14 @@ struct FriendCreationView: View {
             
             Button(action: {
                 if let friend {
-                    updateFriend(friend)
+                    Task {
+                        await friendViewModel.updateFriend(name: friendName, url: friendURL, friend: friend)
+                    }
                 } else {
-                    createFriend()}
+                    Task {
+                        await friendViewModel.addFriend(name: friendName, url: friendURL)
+                    }
+                }
                 path.removeLast()
             }, label: {
                 Text(friend == nil ? "Add new Friend" : "Update Friend")
@@ -60,34 +65,10 @@ struct FriendCreationView: View {
             .disabled(friendURL.isEmpty || friendName.isEmpty)
         }
         .onAppear {
-                    if let friend {
-                        friendName = friend.name
-                        friendURL = friend.url
-                    }
-                }
-    }
-    
-    private func createFriend() {
-        let newFriend = Friend(
-            name: friendName,
-            url: friendURL
-        )
-        modelContext.insert(newFriend)
-        saveData()
-        
-    }
-    
-    private func updateFriend(_ friend: Friend) {
-        friend.name = friendName
-        friend.url = friendURL
-        saveData()
-    }
-    
-    private func saveData(){
-        do {
-            try modelContext.save()
-        } catch {
-            print("Error saving: \(error)")
+            if let friend {
+                friendName = friend.name
+                friendURL = friend.url
+            }
         }
     }
 }
