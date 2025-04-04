@@ -20,7 +20,7 @@ struct HorizontalFriendsView: View {
             
             HStack {
                 ForEach(friends) { friend in
-                    VStack {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 30))]) {
                         let isSelected = selectedFriends.contains(friend.id)
                         
                         ZStack {

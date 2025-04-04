@@ -95,21 +95,19 @@ struct MainView: View {
                 
                 Spacer(minLength: 15)
                 
-                Text("Friends: ")
-                    .font(.title)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                
-                friendsGrid
-                
-                Spacer(minLength: 15)
-                
                 Text("Posts: ")
                     .font(.title)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(-5)
                 
                 postsGrid
                 
-                Spacer(minLength: 25)
+                Text("Friends: ")
+                    .font(.title)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(-5)
+                
+                friendsGrid
                 
                 Button(action: {
                     path.append(.postCreationView(nil))
@@ -122,15 +120,14 @@ struct MainView: View {
                 })
                 
                 Button {
-                    let array = Array(repeating: 100, count: 1000)
+                    let array = Array(repeating: 100, count: 20)
                     for i in array {
                         let randomInt = Int.random(in: 100...1000)
                         print("Adding \(i) with text \(randomInt)")
-                        //Testing
-//                        Task {
-//                            await friendViewModel.addFriend(name: "\(randomInt)", url: "\(randomInt) \(randomInt)")
-//                            await postViewModel.addPost(title: "\(randomInt)", colour: .random, friends: [UUID().uuidString], postKind: .created)
-//                        }
+//                        Testing
+                        Task {
+                            await postViewModel.addPost(title: "\(randomInt)", colour: .random, friends: [UUID().uuidString], postKind: .created)
+                        }
                     }
                 } label: {
                     Text("Bulk Add")
@@ -139,10 +136,10 @@ struct MainView: View {
             .padding()
             .navigationDestination(for: NavViews.self) { destination in
                 switch(destination) {
-                case .friendCreationView(let friend):
-                    FriendCreationView(path: $path, friend: friend)
-                case .postCreationView(let post):
-                    PostCreationView(path: $path, post: post)
+                    case .friendCreationView(let friend):
+                        FriendCreationView(path: $path, friend: friend)
+                    case .postCreationView(let post):
+                        PostCreationView(path: $path, post: post)
                 }
             }
             .onChange(of: selectedFriends) {
@@ -164,55 +161,77 @@ struct MainView: View {
 
 extension MainView{
     var friendsGrid: some View {
-        ScrollView {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())]) {
+        ScrollView(.horizontal) {
+            LazyHGrid(rows: [GridItem(.flexible())]) {
                 ForEach(friendViewModel.friends) { friend in
-                    Text(friend.name)
-                        .padding()
-                        .contextMenu {
-                            Button(role: .destructive) {
-                                Task {
-                                    await friendViewModel.deleteFriend(friend)
-                                }
-                            } label: {
-                                Label("Delete", systemImage: "trash")
+                    let colour: Color = .random
+                    VStack{
+                        Circle()
+                            .fill(colour.opacity(0.6)) // or use a random/user color
+                            .frame(width: 50, height: 50)
+                        
+                        Text("\(friend.name)")
+                        Text("\(friend.url).")
+                            .font(.footnote)
+                        
+                    }
+                    .padding()
+                    .contextMenu {
+                        Button(role: .destructive) {
+                            Task {
+                                await friendViewModel.deleteFriend(friend)
                             }
-                            
-                            Button(role: .cancel) {
-                                updateFriend(friend)
-                            } label: {
-                                Label("Update", systemImage: "trash")
-                            }
+                        } label: {
+                            Label("Delete", systemImage: "trash")
                         }
+                        
+                        Button(role: .cancel) {
+                            updateFriend(friend)
+                        } label: {
+                            Label("Update", systemImage: "trash")
+                        }
+                    }
                 }
             }
         }
+        .frame(height: 120)
         .background(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.gray, lineWidth: 1)
+                .stroke(Color.gray, lineWidth: 0.25)
         )    }
     
     var postsGrid: some View {
         ScrollView {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())]) {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]) {
                 ForEach(postViewModel.posts) { post in
-                    Text(post.title)
-                        .padding()
-                        .contextMenu {
-                            Button(role: .destructive) {
-                                Task {
-                                    await postViewModel.deletePost(post)
-                                }
-                            } label: {
-                                Label("Delete", systemImage: "trash")
+                    
+                    VStack {
+                        Circle()
+                            .fill(post.colour) // or use a random/user color
+                            .frame(width: 50, height: 50)
+                        Text("\(post.title)")
+                        Text("\(post.postKind)")
+                    }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.gray, lineWidth: 0.25)
+                    )
+                    .contextMenu {
+                        Button(role: .destructive) {
+                            Task {
+                                await postViewModel.deletePost(post)
                             }
-                            
-                            Button(role: .cancel) {
-                                updatePost(post)
-                            } label: {
-                                Label("Update", systemImage: "trash")
-                            }
+                        } label: {
+                            Label("Delete", systemImage: "trash")
                         }
+                        
+                        Button(role: .cancel) {
+                            updatePost(post)
+                        } label: {
+                            Label("Update", systemImage: "trash")
+                        }
+                    }
                 }
             }
             Text("Total Posts: \(postViewModel.posts.count)")
@@ -220,14 +239,14 @@ extension MainView{
         }
         .background(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.gray, lineWidth: 1)
+                .stroke(Color.gray, lineWidth: 0.25)
         )
     }
     
 }
 
 extension MainView{
-        
+    
     func updateFriend(_ friend: Friend){
         path.append(.friendCreationView(friend))
     }

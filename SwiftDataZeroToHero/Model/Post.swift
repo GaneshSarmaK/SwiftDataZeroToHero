@@ -19,9 +19,9 @@ final class Post: Identifiable {
     var colourGreen: Double
     var colourBlue: Double
     
-    var colour: Color{
+    var colour: Color {
         get { Color(red: colourRed, green: colourGreen, blue: colourBlue) }
-        set{
+        set {
             if let uiColour = UIColor(newValue).cgColor.components{
                 self.colourRed = Double(uiColour[0])
                 self.colourGreen = Double(uiColour[1])
