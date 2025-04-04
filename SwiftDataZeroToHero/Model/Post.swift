@@ -18,6 +18,7 @@ final class Post: Identifiable {
     var colourRed: Double
     var colourGreen: Double
     var colourBlue: Double
+    var photoURL: String?
     
     var colour: Color {
         get { Color(red: colourRed, green: colourGreen, blue: colourBlue) }
@@ -30,11 +31,12 @@ final class Post: Identifiable {
         }
     }
     
-    init(title: String, colour: Color, friends: [String], postKind: PostKind = .created) {
+    init(title: String, colour: Color, friends: [String], postKind: PostKind = .created, photoURL: String) {
         
         self.friends = friends
         self.postKind = postKind.rawValue
         self.title = title
+        self.photoURL = photoURL
         
         if let uiColour = UIColor(colour).cgColor.components {
             self.colourRed = Double(uiColour[0])
@@ -47,22 +49,23 @@ final class Post: Identifiable {
         }
     }
 }
-//
-//extension Post: Equatable {
-//    static func == (lhs: Post, rhs: Post) -> Bool {
-//        return lhs.id == rhs.id &&
-//        lhs.colour == rhs.colour &&
-//        lhs.title == rhs.title &&
-//        lhs.friends == rhs.friends &&
-//        lhs.postKind == rhs.postKind
-//    }
-//}
-//
-//extension Post: Hashable {
-//    func hash(into hasher: inout Hasher) {
-//        hasher.combine(id)
-//    }
-//}
+
+extension Post: Equatable {
+    static func == (lhs: Post, rhs: Post) -> Bool {
+        return lhs.id == rhs.id &&
+        lhs.colour == rhs.colour &&
+        lhs.title == rhs.title &&
+        lhs.friends == rhs.friends &&
+        lhs.postKind == rhs.postKind &&
+        lhs.photoURL == rhs.photoURL
+    }
+}
+
+extension Post: Hashable {
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+}
 
 enum PostKind: String, Codable, Hashable, CaseIterable {
     case created

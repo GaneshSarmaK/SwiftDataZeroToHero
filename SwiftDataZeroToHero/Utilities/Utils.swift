@@ -31,7 +31,7 @@ struct ImageManager {
         
         do {
             try data.write(to: fileURL)
-            print(fileURL.absoluteString)
+            print(fileURL)
             return filename
         } catch {
             print("Failed to write image data: \(error)")
@@ -68,5 +68,11 @@ struct ImageManager {
     }
 }
 
+extension Data{
+    var toImage: Image? {
+        guard let uiImage = UIImage(data: self) else { return nil }
+        return Image(uiImage: uiImage)
+    }
+}
 
 

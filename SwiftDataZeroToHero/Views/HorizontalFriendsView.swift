@@ -10,7 +10,9 @@ import SwiftData
 
 struct HorizontalFriendsView: View {
     
+    @Environment(FriendViewModel.self) var friendViewModel
     @Binding var selectedFriends: Set<String>
+    @Binding var path: [NavViews]
         
     let friends: [Friend]
     
@@ -19,13 +21,26 @@ struct HorizontalFriendsView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             
             HStack {
+                VStack {
+                    Text("+")
+                        .frame(width: 50, height: 50)
+                        .background(.red)
+                        .cornerRadius(25)
+                    
+                    Text("New")
+                }
+                .padding(.leading, 10)
+                .padding(.trailing, 10)
+                .onTapGesture {
+                    path.append(.friendCreationView(nil))
+                }
                 ForEach(friends) { friend in
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 30))]) {
                         let isSelected = selectedFriends.contains(friend.id)
                         
                         ZStack {
                             Circle()
-                                .fill(Color.gray.opacity(0.2)) // or use a random/user color
+                                .fill(Color.random) // or use a random/user color
                                 .frame(width: 50, height: 50)
                             
                             if isSelected {
@@ -41,6 +56,21 @@ struct HorizontalFriendsView: View {
                     }
                     .onTapGesture {
                         toggleSelection(friend.id)
+                    }
+                    .contextMenu {
+                        Button(role: .destructive) {
+                            Task {
+                                await friendViewModel.deleteFriend(friend)
+                            }
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                        
+                        Button(role: .cancel) {
+                            path.append(.friendCreationView(friend))
+                        } label: {
+                            Label("Update", systemImage: "trash")
+                        }
                     }
                     .padding()
                     

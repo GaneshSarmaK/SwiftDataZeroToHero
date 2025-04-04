@@ -17,97 +17,37 @@ struct MainView: View {
     @State var friendViewModel: FriendViewModel = FriendViewModel()
     @State var postViewModel: PostViewModel = PostViewModel()
     
+    @Environment(\.horizontalSizeClass) var sizeClass
     
+    var columns: [GridItem] {
+        let count = (sizeClass == .regular) ? 3 : 2
+        return Array(repeating: GridItem(.flexible(), spacing: 10), count: count)
+    }
+        
     var body: some View {
         NavigationStack(path: $path){
             VStack {
                 
                 if areFriendsVisible {
-                    HorizontalFriendsView(selectedFriends: $selectedFriends, friends: friendViewModel.friends)
-                        .transition(.move(edge: .top))
-                        .animation(.easeInOut, value: areFriendsVisible)
+                    withAnimation() {
+                        HorizontalFriendsView(selectedFriends: $selectedFriends, path: $path, friends: friendViewModel.friends)
+                            .transition(.move(edge: .top))
+                            .animation(.easeInOut, value: areFriendsVisible)
+                    }
                 }
                 
-                HStack{
-                    Menu {
-                        Button {
-                            selectedKind = nil
-                            Task {
-                                await postViewModel.fetchPosts(friendIDs: Array(selectedFriends))
-                            }
-                        } label: {
-                            Label("All", systemImage: selectedKind == nil ? "checkmark.square" : "square")
-                        }
-                        
-                        Button {
-                            selectedKind = .created
-                            Task {
-                                await postViewModel.fetchPosts(friendIDs: Array(selectedFriends), kind: .created)
-                            }
-                        } label: {
-                            Label("Created", systemImage: selectedKind == .created ? "checkmark.square" : "square")
-                        }
-                        
-                        Button {
-                            selectedKind = .received
-                            Task {
-                                await postViewModel.fetchPosts(friendIDs: Array(selectedFriends), kind: .received)
-                            }
-                        } label: {
-                            Label("Received", systemImage: selectedKind == .received ? "checkmark.square" : "square")
-                        }
-                    }
-                    label: {
-                        Text("Post Kind")
-                            .padding()
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .clipShape(Capsule())
-                    }
-                    
-                    Spacer()
-                    
-                    Button {
-                        areFriendsVisible.toggle()
-                    } label: {
-                        Text(areFriendsVisible ? "Hide Friends" : "Show Friends")
-                            .padding()
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .clipShape(Capsule())
-                    }
-                    
-                    Spacer()
-                    
-                    Button {
-                        areFriendsVisible = false
-                        selectedFriends = []
-                        selectedKind = nil
-                        Task {
-                            await postViewModel.fetchPosts( friendIDs: Array(selectedFriends))
-                        }
-                    } label: {
-                        Text("Clear all")
-                            .padding()
-                            .foregroundColor(.red)
-                    }
-                }
+                controlPanel
                 
                 Spacer(minLength: 15)
                 
                 Text("Posts: ")
                     .font(.title)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(-5)
+                    .padding(5)
                 
                 postsGrid
                 
-                Text("Friends: ")
-                    .font(.title)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(-5)
-                
-                friendsGrid
+                Spacer()
                 
                 Button(action: {
                     path.append(.postCreationView(nil))
@@ -119,19 +59,20 @@ struct MainView: View {
                         .clipShape(Capsule())
                 })
                 
-                Button {
-                    let array = Array(repeating: 100, count: 20)
-                    for i in array {
-                        let randomInt = Int.random(in: 100...1000)
-                        print("Adding \(i) with text \(randomInt)")
-//                        Testing
-                        Task {
-                            await postViewModel.addPost(title: "\(randomInt)", colour: .random, friends: [UUID().uuidString], postKind: .created)
-                        }
-                    }
-                } label: {
-                    Text("Bulk Add")
-                }
+                //                /*Testing*/
+                //                Button {
+                //                    let array = Array(repeating: 100, count: 20)
+                //                    for i in array {
+                //                        let randomInt = Int.random(in: 100...1000)
+                //                        print("Adding \(i) with text \(randomInt)")
+                ////                        Testing
+                //                        Task {
+                //                            await postViewModel.addPost(title: "\(randomInt)", colour: .random, friends: [UUID().uuidString], postKind: .created)
+                //                        }
+                //                    }
+                //                } label: {
+                //                    Text("Bulk Add")
+                //                }
             }
             .padding()
             .navigationDestination(for: NavViews.self) { destination in
@@ -160,63 +101,114 @@ struct MainView: View {
 }
 
 extension MainView{
-    var friendsGrid: some View {
-        ScrollView(.horizontal) {
-            LazyHGrid(rows: [GridItem(.flexible())]) {
-                ForEach(friendViewModel.friends) { friend in
-                    let colour: Color = .random
-                    VStack{
-                        Circle()
-                            .fill(colour.opacity(0.6)) // or use a random/user color
-                            .frame(width: 50, height: 50)
-                        
-                        Text("\(friend.name)")
-                        Text("\(friend.url).")
-                            .font(.footnote)
-                        
+    
+    var controlPanel: some View {
+        HStack{
+            Menu {
+                Button {
+                    selectedKind = nil
+                    Task {
+                        await postViewModel.fetchPosts(friendIDs: Array(selectedFriends))
                     }
+                } label: {
+                    Label("All", systemImage: selectedKind == nil ? "checkmark.square" : "square")
+                }
+                
+                Button {
+                    selectedKind = .created
+                    Task {
+                        await postViewModel.fetchPosts(friendIDs: Array(selectedFriends), kind: .created)
+                    }
+                } label: {
+                    Label("Created", systemImage: selectedKind == .created ? "checkmark.square" : "square")
+                }
+                
+                Button {
+                    selectedKind = .received
+                    Task {
+                        await postViewModel.fetchPosts(friendIDs: Array(selectedFriends), kind: .received)
+                    }
+                } label: {
+                    Label("Received", systemImage: selectedKind == .received ? "checkmark.square" : "square")
+                }
+            }
+            label: {
+                Text("Post Kind")
                     .padding()
-                    .contextMenu {
-                        Button(role: .destructive) {
-                            Task {
-                                await friendViewModel.deleteFriend(friend)
-                            }
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                        
-                        Button(role: .cancel) {
-                            updateFriend(friend)
-                        } label: {
-                            Label("Update", systemImage: "trash")
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .clipShape(Capsule())
+            }
+            
+            Spacer()
+            
+            Text(areFriendsVisible ? "Hide Friends" : "Show Friends")
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .clipShape(Capsule())
+                .onTapGesture {
+                    withAnimation(.none) {
+                        areFriendsVisible.toggle()
+                    }
+                }
+            
+            Spacer()
+            
+            Text("Clear all")
+                .padding()
+                .foregroundColor(.red)
+                .onTapGesture {
+                    withAnimation(.none) {
+                        areFriendsVisible = false
+                        selectedFriends = []
+                        selectedKind = nil
+                        Task {
+                            await postViewModel.fetchPosts( friendIDs: Array(selectedFriends))
                         }
                     }
                 }
-            }
         }
-        .frame(height: 120)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.gray, lineWidth: 0.25)
-        )    }
+    }
     
     var postsGrid: some View {
+        
+        
         ScrollView {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]) {
+            let postImageSize = (sizeClass == .regular) ? 250.0 : 150.0
+            
+            Text("Total Posts: \(postViewModel.posts.count)")
+                .bold()
+            LazyVGrid(columns: columns) {
                 ForEach(postViewModel.posts) { post in
-                    
                     VStack {
-                        Circle()
-                            .fill(post.colour) // or use a random/user color
-                            .frame(width: 50, height: 50)
+                        ImageManager.loadImageFromDocuments(filename: post.photoURL!)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: postImageSize, height: postImageSize)
+                            .cornerRadius(10)
+                        
                         Text("\(post.title)")
-                        Text("\(post.postKind)")
+                        
+                        HStack {
+                            Text("\(post.friends.count) users")
+                                .padding(5)
+                                .padding(.horizontal, 8)
+                                .background(post.colour)
+                                .clipShape(Capsule())
+                            Image(systemName: post.postKind == "created" ? "arrowshape.up.fill" : "arrowshape.down.fill")
+                                .foregroundColor(post.postKind == "created" ? .green : .red)
+                            
+                        }
                     }
-                    .padding()
+                    .padding(5)
                     .background(
                         RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.gray, lineWidth: 0.25)
+                            .stroke(Color.gray.opacity(0.4), lineWidth: 1)
+                            .background(.gray.opacity(0.1))
                     )
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .padding(.bottom, 15)
                     .contextMenu {
                         Button(role: .destructive) {
                             Task {
@@ -233,14 +225,10 @@ extension MainView{
                         }
                     }
                 }
+                
             }
-            Text("Total Posts: \(postViewModel.posts.count)")
-                .bold()
+            
         }
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.gray, lineWidth: 0.25)
-        )
     }
     
 }

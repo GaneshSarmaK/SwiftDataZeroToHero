@@ -38,7 +38,7 @@ final actor PostDataSource {
                 return true
             }
         }
-        let fetchDescriptor = FetchDescriptor<Post>(predicate: filterByKind)
+        let fetchDescriptor = FetchDescriptor<Post>(predicate: filterByKind, sortBy: [SortDescriptor(\.title)])
         do {
             let allPosts = try modelContext.fetch(fetchDescriptor)
             // In-memory filtering based on selected friends

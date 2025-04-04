@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import PhotosUI
 
 struct PostCreationView: View {
     
@@ -15,6 +16,8 @@ struct PostCreationView: View {
     @State private var postTitle: String = ""
     @State private var postKindSelectedSegment: PostKind = .created
     @State private var selectedFriends: Set<String> = []
+    @State private var photoPickerItem: PhotosPickerItem?
+    @State var photoData: Data? = nil
     
     @Environment(FriendViewModel.self) var friendViewModel
     @Environment(PostViewModel.self) var postViewModel
@@ -25,47 +28,43 @@ struct PostCreationView: View {
         
         VStack {
             
-            Spacer(minLength: 30)
             
             Text("Friends: ")
                 .font(.title)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
-            HStack{
-                VStack {
-                    Text("+")
-                        .frame(width: 50, height: 50)
-                        .background(.red)
-                        .cornerRadius(25)
-                    
-                    Text("New")
-                }
-                .padding(.leading, 10)
-                .onTapGesture {
-                    path.append(.friendCreationView(nil))
-                }
-                
-                HorizontalFriendsView(selectedFriends: $selectedFriends, friends: friendViewModel.friends)
-                    .padding()
-            }
+                .padding(.bottom, -10)
+            
+            
+            HorizontalFriendsView(selectedFriends: $selectedFriends, path: $path, friends: friendViewModel.friends)
+            
+            
+            Spacer()
+            
+            (post != nil ? ImageManager.loadImageFromDocuments(filename: post!.photoURL!) : photoData?.toImage ?? Image(systemName: "person.circle"))
+                .resizable()
+                .scaledToFit()
+                .frame(width: 200)
+                .clipShape(.circle)
+            
+            PhotosPicker("Select image", selection: $photoPickerItem, matching: .images)
             
             Spacer()
             
             Text("Post title: ")
                 .font(.title)
-                .padding()
+                .padding(.bottom, -10)
                 .frame(maxWidth: .infinity, alignment: .leading)
             
             TextField("Enter post title", text: $postTitle)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
-                .frame(maxWidth: 300)
+                .frame(maxWidth: .infinity)
                 .padding()
             
             Spacer()
             
             Text("Post Kind: ")
                 .font(.title)
-                .padding()
+                .padding(.bottom, -10)
                 .frame(maxWidth: .infinity, alignment: .leading)
             
             Picker("Select", selection: $postKindSelectedSegment) {
@@ -85,7 +84,7 @@ struct PostCreationView: View {
                     }
                 } else {
                     Task {
-                        await postViewModel.addPost(title: postTitle, colour: .random, friends: Array(selectedFriends), postKind: postKindSelectedSegment)
+                        await postViewModel.addPost(title: postTitle, colour: .random, friends: Array(selectedFriends), postKind: postKindSelectedSegment, photoData: photoData)
                     }
                 }
                 path.removeLast()
@@ -96,7 +95,7 @@ struct PostCreationView: View {
                     .foregroundColor(.white)
                     .clipShape(Capsule())
             })
-            .disabled(postTitle.isEmpty || selectedFriends.isEmpty)
+            .disabled(postTitle.isEmpty || selectedFriends.isEmpty || photoData == nil)
             
         }
         .onAppear{
@@ -107,6 +106,15 @@ struct PostCreationView: View {
                 selectedFriends = Set(post.friends)
                 postTitle = post.title
                 postKindSelectedSegment = PostKind(rawValue: post.postKind) ?? .created
+            }
+        }
+        .onChange(of: photoPickerItem) {
+            Task {
+                if let imageData = try await photoPickerItem?.loadTransferable(type: Data.self) {
+                    photoData = imageData
+                } else {
+                    print("Photo failed")
+                }
             }
         }
     }

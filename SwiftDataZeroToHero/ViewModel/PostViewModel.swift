@@ -19,12 +19,20 @@ final class PostViewModel {
         dataSource = PostDataSource(modelContainer: contianer)
     }
     
-    func addPost(title: String, colour: Color, friends: [String], postKind: PostKind) async {
+    func addPost(title: String, colour: Color, friends: [String], postKind: PostKind, photoData: Data? = nil) async {
+        
+        var photoURL: String? = nil
+        
+        if let photoData = photoData {
+            photoURL = ImageManager.saveImageToDocuments(data: photoData) ?? ""
+        }
+        
         let newPost = Post(
             title: title,
             colour: colour,
             friends: friends,
-            postKind: postKind
+            postKind: postKind,
+            photoURL: photoURL ?? ""
         )
         await dataSource.addPost(newPost)
         posts.append(newPost)
@@ -40,6 +48,9 @@ final class PostViewModel {
     }
     
     func deletePost(_ post: Post) async {
+        if let url = post.photoURL {
+            ImageManager.deleteImageFromDocuments(filename: url)
+        }
         posts.removeAll(where: { $0 == post })
         await dataSource.deletePost(post)
     }
